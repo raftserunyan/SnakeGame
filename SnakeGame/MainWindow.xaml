@@ -1,0 +1,26 @@
+﻿<Window x:Class="SnakeGame.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SnakeGame"
+        mc:Ignorable="d"
+        Title="MainWindow" MinWidth="600" MaxWidth="600" MinHeight="407" MaxHeight="407"
+		Loaded="MainWindow_Loaded"
+		KeyDown="MainWindow_KeyDown">
+	<Canvas Name="BackgroundCanvas" Background="#3f0259" ClipToBounds="True">
+		<Border BorderBrush="White" BorderThickness="5" Margin="5">
+			<Canvas Name="GameArea" Width="350" Height="350" Background="Black"/>
+		</Border>
+
+		<Border BorderBrush="White" BorderThickness="5" Margin="375 5 5 5">
+			<Canvas Name="StatsArea"
+					Width="195" Height="350" 
+					Background="#7800ab"
+					VerticalAlignment="Top" HorizontalAlignment="Left"
+					>
+
+			</Canvas>
+		</Border>
+	</Canvas>
+</Window>
