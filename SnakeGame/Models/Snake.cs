@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using SnakeGame.Enums;
 
 namespace SnakeGame.Models
@@ -19,7 +21,7 @@ namespace SnakeGame.Models
 		{
 			set
 			{
-				//If the intput was the same or the opposite
+				//If the input was the same or the opposite
 				//direction which the snake currently goes:
 				//then ignore the input
 				if (value == this.Head.CurrentDirection
@@ -30,11 +32,11 @@ namespace SnakeGame.Models
 
 				foreach (var part in body)
 				{
-					//If the queue of the part, contains any records
+					//If the queue of the part contains any records
 					if (part.DirectionsQueue.Any())
 					{
-						//Find the latest added record which containsno target point
-						//and assign it a one
+						//Find the latest added record which contains no target point
+						//and assign it one
 						using (var enumerator = part.DirectionsQueue.GetEnumerator())
 						{
 							while (enumerator.MoveNext())
@@ -73,8 +75,15 @@ namespace SnakeGame.Models
 			body = new List<SnakePart>(4);
 
 			//Get the position for the snake's head
-			int posX = (int)(mainWindow.GameArea.Width / 2);
-			int posY = (int)(mainWindow.GameArea.Height / 2);
+			int posX = 0;
+			int posY = 0;
+
+			mainWindow.Dispatcher.Invoke(() =>
+			{
+				posX = (int)(mainWindow.GameArea.Width / 2);
+				posY = (int)(mainWindow.GameArea.Height / 2);
+			});
+			
 
 			//Create the snake's head
 			var snakeHead = new SnakePart(posX, posY, true);
@@ -110,6 +119,11 @@ namespace SnakeGame.Models
 				part.Move();
 				mainWindow.Refresh(part);
 			}
+
+			if (SnakeBitesItself())
+			{
+				mainWindow.StopGame();
+			}
 		}
 
 		public void AddPart()
@@ -119,6 +133,19 @@ namespace SnakeGame.Models
 			//AddSnakePart();
 		}
 
+		private bool SnakeBitesItself()
+		{
+			bool snakeBytesItself = false;
+
+			Parallel.For(2, this.Length - 1, (i, loopState) => {
+												if (this[i].CollidesWith(this[0]))
+												{
+													snakeBytesItself = true;
+													loopState.Stop();
+												}});
+
+			return snakeBytesItself;
+		}
 		private SnakePart AddSnakePart(Point point)
 		{
 			//Create the new Part

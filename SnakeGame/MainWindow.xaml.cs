@@ -1,22 +1,19 @@
-﻿using System.Windows.Threading;
-using System.Threading;
+﻿using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using SnakeGame.Enums;
 using SnakeGame.Models;
 using SnakeGame.Models.Interfaces;
-using System;
 
 namespace SnakeGame
 {
 	public partial class MainWindow : Window
 	{
 		//Fields
-		//private DispatcherTimer dispatcherTimer;
 		private Timer timer;
 		private Snake snake;
-		public const int WindowRefreshRate = 10;
+		public const int WindowRefreshRate = 20;
 
 		//Constructors
 		public MainWindow()
@@ -27,10 +24,12 @@ namespace SnakeGame
 		//Methods
 		public void Draw(IDrawable element)
 		{
-			GameArea.Children.Add(element.UiElement);
-			Refresh(element);
+			this.Dispatcher.Invoke(() =>
+			{
+				GameArea.Children.Add(element.UiElement);
+				Refresh(element);
+			});
 		}
-
 		public void Refresh(IDrawable element)
 		{
 			this.Dispatcher.Invoke(() =>
@@ -38,6 +37,23 @@ namespace SnakeGame
 				Canvas.SetLeft(element.UiElement, element.Position.X);
 				Canvas.SetTop(element.UiElement, element.Position.Y);
 			});
+		}
+		public void StopGame()
+		{
+			timer.Dispose();
+			timer = null;
+
+			MessageBox.Show("You lost((", "Game Over", MessageBoxButton.OK);
+
+			ResetGame();
+		}
+		public void ResetGame()
+		{
+			this.Dispatcher.Invoke(() =>
+			{
+				GameArea.Children.Clear();
+			});
+			snake = new Snake(this);
 		}
 
 		//Event Handlers
@@ -68,11 +84,6 @@ namespace SnakeGame
 			if (timer == null)
 			{
 				timer = new Timer((obj) => snake.Move(), null, 0, WindowRefreshRate);
-
-				//dispatcherTimer = new DispatcherTimer();
-				//dispatcherTimer.Tick += (a, b) => snake.Move();
-				//dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, WindowRefreshRate);
-				//dispatcherTimer.Start();
 			}
 		}
 	}

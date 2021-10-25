@@ -28,12 +28,17 @@ namespace SnakeGame.Models
 		{
 			Position = new Point(x, y);
 			IsHead = isHead;
-			UiElement = new Ellipse()
+
+			Application.Current.Dispatcher.Invoke(() =>
 			{
-				Width = SideLength,
-				Height = SideLength,
-				Fill = isHead ? Brushes.Red : Brushes.Yellow
-			};
+				UiElement = new Ellipse()
+				{
+					Width = SideLength,
+					Height = SideLength,
+					Fill = isHead ? Brushes.Red : Brushes.Yellow
+				};
+			});
+
 			DirectionsQueue = new Queue<ChangeDirectionPoint>();
 		}
 
@@ -84,6 +89,14 @@ namespace SnakeGame.Models
 
 			MoveToDirection();
 		}
+		public bool CollidesWith(IDrawable element)
+		{
+			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
+			var rect2 = new Rect(element.Position.X, element.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
+
+			return rect1.IntersectsWith(rect2);
+		}
+
 
 		private bool HasReachedTarget()
 		{
