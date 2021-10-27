@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 using SnakeGame.Enums;
 
 namespace SnakeGame.Models
@@ -80,35 +78,36 @@ namespace SnakeGame.Models
 
 			mainWindow.Dispatcher.Invoke(() =>
 			{
-				posX = (int)(mainWindow.GameArea.Width / 2);
+				posX = 5;//(int)(mainWindow.GameArea.Width / 2);
 				posY = (int)(mainWindow.GameArea.Height / 2);
 			});
-			
 
 			//Create the snake's head
 			var snakeHead = new SnakePart(posX, posY, true);
+			snakeHead.CurrentDirection = Direction.None;
 			body.Add(snakeHead);
 			mainWindow.Draw(snakeHead);
+			Application.Current.Dispatcher.Invoke(() => { Panel.SetZIndex(snakeHead.UiElement, 100); });
 
 			//Create two more snake parts
 			this.AddSnakePart(new Point(Head.Position.X,
 										Head.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(175, 175), Direction.Up));
+											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(5, 175), Direction.Up));
 			this.AddSnakePart(new Point(Tail.Position.X,
 										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(175, 175), Direction.Up));
+											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(5, 175), Direction.Up));
 			this.AddSnakePart(new Point(Tail.Position.X,
 										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(175, 175), Direction.Up));
+											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(5, 175), Direction.Up));
 			this.AddSnakePart(new Point(Tail.Position.X,
 										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(175, 175), Direction.Up));
+											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(5, 175), Direction.Up));
 			this.AddSnakePart(new Point(Tail.Position.X,
 										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(175, 175), Direction.Up));
+											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(5, 175), Direction.Up));
 			this.AddSnakePart(new Point(Tail.Position.X,
 										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(175, 175), Direction.Up));
+											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(5, 175), Direction.Up));
 		}
 
 		//Methods
@@ -120,7 +119,7 @@ namespace SnakeGame.Models
 				mainWindow.Refresh(part);
 			}
 
-			if (SnakeBitesItself())
+			if (BitesItself() || CollidesWithWalls())
 			{
 				mainWindow.StopGame();
 			}
@@ -133,18 +132,44 @@ namespace SnakeGame.Models
 			//AddSnakePart();
 		}
 
-		private bool SnakeBitesItself()
+		private bool BitesItself()
 		{
 			bool snakeBytesItself = false;
 
-			Parallel.For(2, this.Length - 1, (i, loopState) => {
-												if (this[i].CollidesWith(this[0]))
-												{
-													snakeBytesItself = true;
-													loopState.Stop();
-												}});
+			Parallel.For(2, this.Length, (i, loopState) =>
+			{
+				if (this[i].CollidesWith(this[0]))
+				{
+					snakeBytesItself = true;
+					loopState.Stop();
+				}
+			});
 
 			return snakeBytesItself;
+		}
+		private bool CollidesWithWalls()
+		{
+			bool collidesWithWalls = false;
+			var array = mainWindow.Borders;
+
+			for (int i = 0; i < array.Length; i++)
+			{
+				if (this[0].CollidesWith(array[i]))
+				{
+					collidesWithWalls = true;
+					break;
+				}
+			}
+			//Parallel.For(0, array.Length, (i, loopState) =>
+			//{
+			//	if (this[0].CollidesWith(array[i]))
+			//	{
+			//		collidesWithWalls = true;
+			//		loopState.Stop();
+			//	}
+			//});
+
+			return collidesWithWalls;
 		}
 		private SnakePart AddSnakePart(Point point)
 		{

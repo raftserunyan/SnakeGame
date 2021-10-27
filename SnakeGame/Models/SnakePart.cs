@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using SnakeGame.Enums;
@@ -93,6 +94,17 @@ namespace SnakeGame.Models
 		{
 			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
 			var rect2 = new Rect(element.Position.X, element.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
+
+			return rect1.IntersectsWith(rect2);
+		}
+		public bool CollidesWith(Rectangle element)
+		{
+			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
+			Rect rect2;
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				rect2 = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element), element.Width - 0.1, element.Height - 0.1);
+			});
 
 			return rect1.IntersectsWith(rect2);
 		}

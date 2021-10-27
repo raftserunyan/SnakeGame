@@ -10,7 +10,12 @@
 		KeyDown="MainWindow_KeyDown">
 	<Canvas Name="BackgroundCanvas" Background="#3f0259" ClipToBounds="True">
 		<Border BorderBrush="White" BorderThickness="5" Margin="5">
-			<Canvas Name="GameArea" Width="350" Height="350" Background="Black"/>
+			<Canvas Name="GameArea" Width="350" Height="350" Background="Black">
+				<Rectangle Name="LeftBorder" Height="350" Width="5" Canvas.Left="-5" Canvas.Top="0" Fill="White" />
+				<Rectangle Name="TopBorder" Height="5" Width="350" Canvas.Left="0" Canvas.Top="-5" Fill="White" />
+				<Rectangle Name="RightBorder" Height="350" Width="5" Canvas.Left="350" Canvas.Top="0" Fill="White" />
+				<Rectangle Name="BottomBorder" Height="5" Width="350" Canvas.Left ="0" Canvas.Top="350" Fill="White" />
+			</Canvas>
 		</Border>
 
 		<Border BorderBrush="White" BorderThickness="5" Margin="375 5 5 5">
