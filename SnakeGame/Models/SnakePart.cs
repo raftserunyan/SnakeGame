@@ -109,7 +109,6 @@ namespace SnakeGame.Models
 			return rect1.IntersectsWith(rect2);
 		}
 
-
 		private bool HasReachedTarget()
 		{
 			return this.Position.X == CurrentTargetPoint.X

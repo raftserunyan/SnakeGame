@@ -6,7 +6,6 @@ using System.Windows.Input;
 using SnakeGame.Enums;
 using SnakeGame.Models;
 using SnakeGame.Models.Interfaces;
-using System.Linq;
 using System.Windows.Threading;
 
 namespace SnakeGame
