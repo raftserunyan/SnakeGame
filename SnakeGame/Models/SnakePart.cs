@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -16,11 +17,13 @@ namespace SnakeGame.Models
 		public Direction CurrentDirection;
 
 		public const int SideLength = 10;
+
 		public bool IsHead { get; set; }
 		public UIElement UiElement { get; set; }
 		public Point Position { get; set; }
 		public Queue<ChangeDirectionPoint> DirectionsQueue { get; set; }
-
+		public int Width { get; set; }
+		public int Height { get; set; }
 
 		public SnakePart(int x, int y) : this(x, y, false)
 		{
@@ -32,6 +35,8 @@ namespace SnakeGame.Models
 
 			Application.Current.Dispatcher.Invoke(() =>
 			{
+				Width = SideLength;
+				Height = SideLength;
 				UiElement = new Ellipse()
 				{
 					Width = SideLength,
@@ -90,23 +95,70 @@ namespace SnakeGame.Models
 
 			MoveToDirection();
 		}
+
 		public bool CollidesWith(IDrawable element)
 		{
-			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
-			var rect2 = new Rect(element.Position.X, element.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
+			double offset = 0.01;
+			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - offset, SnakePart.SideLength - offset);
+			var rect2 = new Rect(element.Position.X, element.Position.Y, element.Width - offset, element.Height - offset);
 
 			return rect1.IntersectsWith(rect2);
 		}
 		public bool CollidesWith(Rectangle element)
 		{
-			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - 0.1, SnakePart.SideLength - 0.1);
+			double offset = 0.01;
+			var rect1 = new Rect(this.Position.X, this.Position.Y, SnakePart.SideLength - offset, SnakePart.SideLength - offset);
+
 			Rect rect2;
 			Application.Current.Dispatcher.Invoke(() =>
 			{
-				rect2 = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element), element.Width - 0.1, element.Height - 0.1);
+				rect2 = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element), element.Width - offset, element.Height - offset);
 			});
 
 			return rect1.IntersectsWith(rect2);
+		}
+		public bool CollidesWithAnyParalell(IDrawable[] elements)
+		{
+			double offset = 0.01;
+			var rect1 = new Rect(this.Position.X, this.Position.Y, this.Width - offset, this.Height - offset);
+			bool result = false;
+
+			Rect rect2;
+			_ = Parallel.For(0, elements.Length, (i, loopState) =>
+			{
+				rect2 = new Rect(elements[i].Position.X, elements[i].Position.Y, elements[i].Width - offset, elements[i].Height - offset);
+
+				if (rect1.IntersectsWith(rect2))
+				{
+					result = true;
+					loopState.Stop();
+				}
+			});
+
+			return result;
+		}
+		public bool CollidesWithAnyParalell(Rectangle[] elements)
+		{
+			double offset = 0.01;
+			var rect1 = new Rect(this.Position.X, this.Position.Y, this.Width - offset, this.Height - offset);
+			bool result = false;
+
+			Rect rect2;
+			_ = Parallel.For(0, elements.Length, (i, loopState) =>
+			{
+				Application.Current.Dispatcher.Invoke(() =>
+				{
+					rect2 = new Rect(Canvas.GetLeft(elements[i]), Canvas.GetTop(elements[i]), elements[i].Width - offset, elements[i].Height - offset);
+				});
+
+				if (rect1.IntersectsWith(rect2))
+				{
+					result = true;
+					loopState.Stop();
+				}
+			});
+
+			return result;
 		}
 
 		private bool HasReachedTarget()

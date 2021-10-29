@@ -1,21 +1,29 @@
-﻿using System.Windows.Shapes;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Shapes;
+using System.Windows.Threading;
 using SnakeGame.Enums;
 using SnakeGame.Models;
 using SnakeGame.Models.Interfaces;
-using System.Windows.Threading;
 
 namespace SnakeGame
 {
 	public partial class MainWindow : Window
 	{
 		//Fields
+		public const int WindowRefreshRate = 10;
+		public Food Food;
+		public List<Food> BonusFoods;
+		public int Score;
+
 		private Timer timer;
+		//private DispatcherTimer timer;
 		private Snake snake;
-		public const int WindowRefreshRate = 2;
 
 		//Properties
 		public Rectangle[] Borders { get; set; }
@@ -24,8 +32,12 @@ namespace SnakeGame
 		public MainWindow()
 		{
 			InitializeComponent();
+
 			Borders = new Rectangle[4];
 			Borders = GetBorders();
+
+			BonusFoods = new List<Food>();
+			Score = 0;
 		}
 
 		//Methods
@@ -47,6 +59,9 @@ namespace SnakeGame
 		}
 		public void StopGame()
 		{
+			if (timer == null)
+				return;
+
 			timer.Dispose();
 			//timer.Stop();
 			timer = null;
@@ -61,7 +76,20 @@ namespace SnakeGame
 			{
 				GameArea.Children.Clear();
 			});
-			snake = new Snake(this);
+
+			SetUpGameArea();
+		}
+		public void RespawnFood()
+		{
+			Food.Dispose();
+
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				this.GameArea.Children.Remove(this.Food.UiElement);
+			});
+
+			InitializeFood();
+			this.Draw(Food);
 		}
 
 		private Rectangle[] GetBorders()
@@ -78,11 +106,73 @@ namespace SnakeGame
 
 			return array;
 		}
+		private Food InitializeFood()
+		{
+			do
+			{
+				var rnd = new Random();
+
+				int width = 0;
+				int height = 0;
+				Application.Current.Dispatcher.Invoke(() => 
+				{
+					width = (int)this.GameArea.Width;
+					height = (int)this.GameArea.Height;
+				});
+
+				var maxFoodSize = Food.SideLength + Food.ExtensionLimit;
+				var point = new Models.Point(rnd.Next(0 + Food.ExtensionLimit / 2, width - maxFoodSize),
+										rnd.Next(0 + Food.ExtensionLimit / 2, height - maxFoodSize));
+
+				Food = new Food(point, false, this);
+			}
+			while (!IsFoodPositionOk(Food));
+
+			Food.StartBeating();
+
+			return Food;
+		}
+		private bool IsFoodPositionOk(Food food)
+		{
+			bool isPositionOk = true;
+
+			Parallel.For(0, this.snake.Length, (i, loopState) =>
+			{
+				if (this.snake[i].CollidesWith(food))
+				{
+					isPositionOk = false;
+					loopState.Stop();
+				}
+			});
+
+			return isPositionOk;
+		}
+		private void SetUpGameArea()
+		{
+			snake = new Snake(this);
+			Food = InitializeFood();
+			Draw(Food);
+		}
+		private void RefreshGame()
+		{
+			snake.Move();
+
+			if (snake.BitesItself() || snake.CollidesWithWalls())
+				this.StopGame();
+
+			if (snake.EatsFood())
+			{
+				Score++;
+
+				snake.Extend();
+				this.RespawnFood();
+			}
+		}
 
 		//Event Handlers
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
 		{
-			snake = new Snake(this);
+			SetUpGameArea();
 		}
 		private void MainWindow_KeyDown(object sender, KeyEventArgs e)
 		{
@@ -113,8 +203,8 @@ namespace SnakeGame
 				//timer.Interval = new System.TimeSpan(0, 0, 0, 0, WindowRefreshRate);
 				//timer.Tick += (a, b) => snake.Move();
 				//timer.Start();
-				timer = new Timer((obj) => snake.Move(), null, 0, WindowRefreshRate);
+				timer = new Timer((obj) => this.RefreshGame(), null, 0, WindowRefreshRate);
 			}
-		}
+		}		
 	}
 }

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using SnakeGame.Enums;
@@ -96,18 +95,6 @@ namespace SnakeGame.Models
 			this.AddSnakePart(new Point(Tail.Position.X,
 										Tail.Position.Y + SnakePart.SideLength))
 											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
-			this.AddSnakePart(new Point(Tail.Position.X,
-										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
-			this.AddSnakePart(new Point(Tail.Position.X,
-										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
-			this.AddSnakePart(new Point(Tail.Position.X,
-										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
-			this.AddSnakePart(new Point(Tail.Position.X,
-										Tail.Position.Y + SnakePart.SideLength))
-											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
 		}
 
 		//Methods
@@ -118,11 +105,6 @@ namespace SnakeGame.Models
 				part.Move();
 				mainWindow.Refresh(part);
 			}
-
-			if (BitesItself() || CollidesWithWalls())
-			{
-				mainWindow.StopGame();
-			}
 		}
 		public void AddPart()
 		{
@@ -130,38 +112,59 @@ namespace SnakeGame.Models
 
 			//AddSnakePart();
 		}
-
-		private bool BitesItself()
+		public bool BitesItself()
 		{
-			bool snakeBytesItself = false;
-
-			Parallel.For(2, this.Length, (i, loopState) =>
-			{
-				if (this[i].CollidesWith(this[0]))
-				{
-					snakeBytesItself = true;
-					loopState.Stop();
-				}
-			});
+			bool snakeBytesItself = this.Head.CollidesWithAnyParalell(body.Skip(2).ToArray());
 
 			return snakeBytesItself;
 		}
-		private bool CollidesWithWalls()
+		public bool CollidesWithWalls()
 		{
-			bool collidesWithWalls = false;
 			var array = mainWindow.Borders;
 
-			Parallel.For(0, array.Length, (i, loopState) =>
-			{
-				if (this[0].CollidesWith(array[i]))
-				{
-					collidesWithWalls = true;
-					loopState.Stop();
-				}
-			});
+			bool collidesWithWalls = this.Head.CollidesWithAnyParalell(array);
 
 			return collidesWithWalls;
 		}
+		public void Extend()
+		{
+			//Adding a new part to the snake
+			int x = 0;
+			int y = 0;
+
+			switch (this.Tail.CurrentDirection)
+			{
+				case Direction.None:
+					break;
+				case Direction.Left:
+					x = 1;
+					break;
+				case Direction.Up:
+					y = 1;
+					break;
+				case Direction.Right:
+					x = -1;
+					break;
+				case Direction.Down:
+					y = -1;
+					break;
+				default:
+					break;
+			}
+
+			var currentTail = this.Tail;
+			var newPart = AddSnakePart(new Point(currentTail.Position.X + x * SnakePart.SideLength,
+												currentTail.Position.Y + y * SnakePart.SideLength));
+
+			newPart.CurrentDirection = currentTail.CurrentDirection;
+			newPart.CurrentTargetPoint = currentTail.CurrentTargetPoint != null ? new Point(currentTail.CurrentTargetPoint) : null;
+			newPart.DirectionsQueue = CloneQueue(currentTail.DirectionsQueue);
+		}
+		public bool EatsFood()
+		{
+			return this.Head.CollidesWith(mainWindow.Food);
+		}
+
 		private SnakePart AddSnakePart(Point point)
 		{
 			//Create the new Part
@@ -172,6 +175,23 @@ namespace SnakeGame.Models
 			mainWindow.Draw(newPart);
 
 			return newPart;
+		}
+		private static Queue<ChangeDirectionPoint> CloneQueue(Queue<ChangeDirectionPoint> source)
+		{
+			var queue = new Queue<ChangeDirectionPoint>();
+
+			using (var enumerator = source.GetEnumerator())
+			{
+				while (enumerator.MoveNext())
+				{
+					var point = enumerator.Current.Point != null ? new Point(enumerator.Current.Point) : null;
+					var changeDirPoint = new ChangeDirectionPoint(point,
+																	enumerator.Current.Direction);
+					queue.Enqueue(changeDirPoint);
+				}
+			}
+
+			return queue;
 		}
 	}
 }
