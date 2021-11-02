@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -16,7 +17,8 @@ namespace SnakeGame.Models
 
 		public const int SideLength = 10;
 		public const int BeatingInterval = 300;
-		public const int ExtensionLimit = 2;
+		public const int ExtensionLimit = 3;
+		public const int BonusFoodLifetime = 5000;
 
 		public int Width { get; set; }
 		public int Height { get; set; }
@@ -45,6 +47,8 @@ namespace SnakeGame.Models
 						Fill = Brushes.Blue
 					};
 				});
+
+				Task.Run(async () => { await Task.Delay(BonusFoodLifetime); mainWindow.RemoveBonusFood(this); });
 			}
 			else
 			{

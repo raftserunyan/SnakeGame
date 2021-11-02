@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,15 +11,17 @@ using System.Windows.Threading;
 using SnakeGame.Enums;
 using SnakeGame.Models;
 using SnakeGame.Models.Interfaces;
+using SnakeGame.Extensions;
+using System.IO;
 
 namespace SnakeGame
 {
 	public partial class MainWindow : Window
 	{
 		//Fields
-		public const int WindowRefreshRate = 10;
+		public const int WindowRefreshRate = 5;
 		public Food Food;
-		public List<Food> BonusFoods;
+		public HashSet<Food> BonusFoods;
 		public int Score;
 
 		private Timer timer;
@@ -36,7 +39,7 @@ namespace SnakeGame
 			Borders = new Rectangle[4];
 			Borders = GetBorders();
 
-			BonusFoods = new List<Food>();
+			BonusFoods = new HashSet<Food>();
 			Score = 0;
 		}
 
@@ -55,6 +58,17 @@ namespace SnakeGame
 			{
 				Canvas.SetLeft(element.UiElement, element.Position.X);
 				Canvas.SetTop(element.UiElement, element.Position.Y);
+			});
+		}
+		public void Refresh(IEnumerable<IDrawable> elements)
+		{
+			this.Dispatcher.Invoke(() =>
+			{
+				foreach (var element in elements)
+				{
+					Canvas.SetLeft(element.UiElement, element.Position.X);
+					Canvas.SetTop(element.UiElement, element.Position.Y);
+				}
 			});
 		}
 		public void StopGame()
@@ -77,25 +91,43 @@ namespace SnakeGame
 				GameArea.Children.Clear();
 			});
 
+			Score = 0;
+			BonusFoods.Clear();
+
 			SetUpGameArea();
 		}
 		public void RespawnFood()
 		{
-			Food.Dispose();
-
 			Application.Current.Dispatcher.Invoke(() =>
 			{
 				this.GameArea.Children.Remove(this.Food.UiElement);
 			});
 
+			Food.Dispose();
+			Food = null;
+
 			InitializeFood();
 			this.Draw(Food);
+		}
+		public void RemoveBonusFood(Food bonusFood)
+		{
+			this.BonusFoods.Remove(bonusFood);
+
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				this.GameArea.Children.Remove(bonusFood.UiElement);
+			});
 		}
 
 		private Rectangle[] GetBorders()
 		{
 			var array = new Rectangle[4];
-			var enumerator = this.GameArea.Children.GetEnumerator();
+
+			IEnumerator enumerator = null;
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				enumerator = this.GameArea.Children.GetEnumerator();
+			});
 
 			int i = 0;
 			while (enumerator.MoveNext() && i < 4)
@@ -108,44 +140,52 @@ namespace SnakeGame
 		}
 		private Food InitializeFood()
 		{
+			Food food;
 			do
 			{
 				var rnd = new Random();
 
-				int width = 0;
-				int height = 0;
-				Application.Current.Dispatcher.Invoke(() => 
+				int gameAreaWidth = 0;
+				int gameAreaHeight = 0;
+				Application.Current.Dispatcher.Invoke(() =>
 				{
-					width = (int)this.GameArea.Width;
-					height = (int)this.GameArea.Height;
+					gameAreaWidth = (int)this.GameArea.Width;
+					gameAreaHeight = (int)this.GameArea.Height;
 				});
 
 				var maxFoodSize = Food.SideLength + Food.ExtensionLimit;
-				var point = new Models.Point(rnd.Next(0 + Food.ExtensionLimit / 2, width - maxFoodSize),
-										rnd.Next(0 + Food.ExtensionLimit / 2, height - maxFoodSize));
+				var point = new Models.Point(rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaWidth - maxFoodSize),
+										rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaHeight - maxFoodSize));
 
-				Food = new Food(point, false, this);
+				food = new Food(point, false, this);
 			}
-			while (!IsFoodPositionOk(Food));
+			while (!IsFoodPositionOk(food));
 
+			Food = food;
 			Food.StartBeating();
 
 			return Food;
 		}
 		private bool IsFoodPositionOk(Food food)
 		{
-			bool isPositionOk = true;
-
-			Parallel.For(0, this.snake.Length, (i, loopState) =>
+			foreach (var bonusFood in BonusFoods)
 			{
-				if (this.snake[i].CollidesWith(food))
+				if (bonusFood.CollidesWith(food))
 				{
-					isPositionOk = false;
-					loopState.Stop();
+					return false;
 				}
-			});
+			}
 
-			return isPositionOk;
+			if (this.Food != null)
+			{
+				if (food.CollidesWith(this.Food))
+					return false;
+			}
+
+			if (food.CollidesWithAnyParallel(snake.Body.ToArray()))
+				return false;
+
+			return true;
 		}
 		private void SetUpGameArea()
 		{
@@ -155,18 +195,63 @@ namespace SnakeGame
 		}
 		private void RefreshGame()
 		{
-			snake.Move();
-
-			if (snake.BitesItself() || snake.CollidesWithWalls())
-				this.StopGame();
-
-			if (snake.EatsFood())
+			try
 			{
-				Score++;
+				snake.Move();
 
-				snake.Extend();
-				this.RespawnFood();
+				if (snake.BitesItself() || snake.CollidesWithWalls())
+					this.StopGame();
+
+				if (snake.EatsFood())
+				{
+					this.RespawnFood();
+					snake.Extend();
+
+					Score++;
+					if (Score % 5 == 0)
+						SpawnBonusFood();
+				}
+				else if (snake.EatsBonusFood(out Food bonusFood))
+				{
+					this.Score += 5;
+					RemoveBonusFood(bonusFood);
+				}
 			}
+			catch (Exception e)
+			{
+				using (StreamWriter sw = new StreamWriter("C:\\Users\\rtserunyan\\Desktop\\Logs.txt"))
+				{
+					sw.WriteLine(e.Message + "----------- Object -----" + e.Source + "-----Inner---" + e.InnerException);
+				}
+			}
+		}
+		private void SpawnBonusFood()
+		{
+			int gameAreaWidth = 0;
+			int gameAreaHeight = 0;
+			Application.Current.Dispatcher.Invoke(() =>
+			{
+				gameAreaWidth = (int)this.GameArea.Width;
+				gameAreaHeight = (int)this.GameArea.Height;
+			});
+
+			var rnd = new Random();
+			var maxFoodSize = Food.SideLength * 2 + Food.ExtensionLimit;
+
+			Food bonusFood;
+			do
+			{
+				var point = new Models.Point(rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaWidth - maxFoodSize),
+										rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaHeight - maxFoodSize));
+
+				bonusFood = new Food(point, true, this);
+			}
+			while (!IsFoodPositionOk(bonusFood));
+
+			this.BonusFoods.Add(bonusFood);
+			this.Draw(bonusFood);
+
+			bonusFood.StartBeating();
 		}
 
 		//Event Handlers
@@ -201,10 +286,10 @@ namespace SnakeGame
 			{
 				//timer = new DispatcherTimer();
 				//timer.Interval = new System.TimeSpan(0, 0, 0, 0, WindowRefreshRate);
-				//timer.Tick += (a, b) => snake.Move();
+				//timer.Tick += (a, b) => RefreshGame();
 				//timer.Start();
 				timer = new Timer((obj) => this.RefreshGame(), null, 0, WindowRefreshRate);
 			}
-		}		
+		}
 	}
 }

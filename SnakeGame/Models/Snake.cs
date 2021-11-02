@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+//using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using SnakeGame.Enums;
+using SnakeGame.Extensions;
 
 namespace SnakeGame.Models
 {
@@ -10,7 +13,7 @@ namespace SnakeGame.Models
 	{
 		//Fields
 		public const int MovingSpeed = 2;
-		private List<SnakePart> body;
+		public List<SnakePart> Body;
 		private MainWindow mainWindow;
 
 		//Properties
@@ -27,7 +30,7 @@ namespace SnakeGame.Models
 
 				var changeDirectionPoint = new ChangeDirectionPoint(null, value);
 
-				foreach (var part in body)
+				foreach (var part in Body)
 				{
 					//If the queue of the part contains any records
 					if (part.DirectionsQueue.Any())
@@ -58,18 +61,18 @@ namespace SnakeGame.Models
 				}
 			}
 		}
-		public SnakePart Head => body[0];
-		public SnakePart Tail => body[Length - 1];
-		public int Length => body.Count;
+		public SnakePart Head => Body[0];
+		public SnakePart Tail => Body[Length - 1];
+		public int Length => Body.Count;
 
 		//Indexers
-		public SnakePart this[int index] => body[index];
+		public SnakePart this[int index] => Body[index];
 
 		//Constructors
 		public Snake(MainWindow _mw)
 		{
 			mainWindow = _mw;
-			body = new List<SnakePart>(4);
+			Body = new List<SnakePart>(4);
 
 			//Get the position for the snake's head
 			int posX = 0;
@@ -84,7 +87,7 @@ namespace SnakeGame.Models
 			//Create the snake's head
 			var snakeHead = new SnakePart(posX, posY, true);
 			snakeHead.CurrentDirection = Direction.None;
-			body.Add(snakeHead);
+			Body.Add(snakeHead);
 			mainWindow.Draw(snakeHead);
 			Application.Current.Dispatcher.Invoke(() => { Panel.SetZIndex(snakeHead.UiElement, 100); });
 
@@ -100,21 +103,15 @@ namespace SnakeGame.Models
 		//Methods
 		public void Move()
 		{
-			foreach (var part in body)
+			foreach (var part in this.Body)
 			{
 				part.Move();
-				mainWindow.Refresh(part);
 			}
-		}
-		public void AddPart()
-		{
-			//Not implemented
-
-			//AddSnakePart();
+			mainWindow.Refresh(this.Body);
 		}
 		public bool BitesItself()
 		{
-			bool snakeBytesItself = this.Head.CollidesWithAnyParalell(body.Skip(2).ToArray());
+			bool snakeBytesItself = this.Head.CollidesWithAnyParallel(Body.Skip(2).ToArray());
 
 			return snakeBytesItself;
 		}
@@ -122,7 +119,7 @@ namespace SnakeGame.Models
 		{
 			var array = mainWindow.Borders;
 
-			bool collidesWithWalls = this.Head.CollidesWithAnyParalell(array);
+			bool collidesWithWalls = this.Head.CollidesWithAnyParallel(array);
 
 			return collidesWithWalls;
 		}
@@ -164,12 +161,26 @@ namespace SnakeGame.Models
 		{
 			return this.Head.CollidesWith(mainWindow.Food);
 		}
+		public bool EatsBonusFood(out Food bonusFood)
+		{
+			foreach (var item in mainWindow.BonusFoods)
+			{
+				if (this.Head.CollidesWith(item))
+				{
+					bonusFood = item;
+					return true;
+				}
+			}
+
+			bonusFood = null;
+			return false;
+		}
 
 		private SnakePart AddSnakePart(Point point)
 		{
 			//Create the new Part
 			var newPart = new SnakePart(point.X, point.Y);
-			body.Add(newPart);
+			Body.Add(newPart);
 
 			//Draw the part
 			mainWindow.Draw(newPart);
