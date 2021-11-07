@@ -15,7 +15,7 @@ namespace SnakeGame.Models
 		private bool IsExpanded;
 		private readonly MainWindow mainWindow;
 
-		public const int SideLength = 10;
+		public const int SideLength = 15;
 		public const int BeatingInterval = 300;
 		public const int ExtensionLimit = 3;
 		public const int BonusFoodLifetime = 5000;
@@ -113,7 +113,7 @@ namespace SnakeGame.Models
 				uiElement.Height = height;
 			});
 
-			mainWindow.Refresh(this);
+			mainWindow.RefreshElement(this);
 		}
 
 		//IDisposable pattern

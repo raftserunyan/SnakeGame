@@ -12,7 +12,7 @@ namespace SnakeGame.Models
 	public class Snake
 	{
 		//Fields
-		public const int MovingSpeed = 2;
+		public const int MovingSpeed = 3;
 		public List<SnakePart> Body;
 		private MainWindow mainWindow;
 
@@ -88,7 +88,7 @@ namespace SnakeGame.Models
 			var snakeHead = new SnakePart(posX, posY, true);
 			snakeHead.CurrentDirection = Direction.None;
 			Body.Add(snakeHead);
-			mainWindow.Draw(snakeHead);
+			mainWindow.DrawElement(snakeHead);
 			Application.Current.Dispatcher.Invoke(() => { Panel.SetZIndex(snakeHead.UiElement, 100); });
 
 			//Create two more snake parts
@@ -107,7 +107,7 @@ namespace SnakeGame.Models
 			{
 				part.Move();
 			}
-			mainWindow.Refresh(this.Body);
+			mainWindow.RefreshElement(this.Body);
 		}
 		public bool BitesItself()
 		{
@@ -183,7 +183,7 @@ namespace SnakeGame.Models
 			Body.Add(newPart);
 
 			//Draw the part
-			mainWindow.Draw(newPart);
+			mainWindow.DrawElement(newPart);
 
 			return newPart;
 		}

@@ -14,7 +14,7 @@ namespace SnakeGame.Models
 		public Point CurrentTargetPoint;
 		public Direction CurrentDirection;
 
-		public const int SideLength = 12;
+		public const int SideLength = 18;
 
 		public bool IsHead { get; set; }
 		public UIElement UiElement { get; set; }

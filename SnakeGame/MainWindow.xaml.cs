@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,7 +11,6 @@ using SnakeGame.Enums;
 using SnakeGame.Models;
 using SnakeGame.Models.Interfaces;
 using SnakeGame.Extensions;
-using System.IO;
 
 namespace SnakeGame
 {
@@ -35,6 +33,7 @@ namespace SnakeGame
 		public MainWindow()
 		{
 			InitializeComponent();
+			InitializeBorders();
 
 			Borders = new Rectangle[4];
 			Borders = GetBorders();
@@ -44,15 +43,15 @@ namespace SnakeGame
 		}
 
 		//Methods
-		public void Draw(IDrawable element)
+		public void DrawElement(IDrawable element)
 		{
 			this.Dispatcher.Invoke(() =>
 			{
 				GameArea.Children.Add(element.UiElement);
-				Refresh(element);
+				RefreshElement(element);
 			});
 		}
-		public void Refresh(IDrawable element)
+		public void RefreshElement(IDrawable element)
 		{
 			this.Dispatcher.Invoke(() =>
 			{
@@ -60,7 +59,7 @@ namespace SnakeGame
 				Canvas.SetTop(element.UiElement, element.Position.Y);
 			});
 		}
-		public void Refresh(IEnumerable<IDrawable> elements)
+		public void RefreshElement(IEnumerable<IDrawable> elements)
 		{
 			this.Dispatcher.Invoke(() =>
 			{
@@ -71,6 +70,7 @@ namespace SnakeGame
 				}
 			});
 		}
+
 		public void StopGame()
 		{
 			if (timer == null)
@@ -93,6 +93,7 @@ namespace SnakeGame
 
 			Score = 0;
 			BonusFoods.Clear();
+			Borders = Array.Empty<Rectangle>();
 
 			SetUpGameArea();
 		}
@@ -107,7 +108,7 @@ namespace SnakeGame
 			Food = null;
 
 			InitializeFood();
-			this.Draw(Food);
+			this.DrawElement(Food);
 		}
 		public void RemoveBonusFood(Food bonusFood)
 		{
@@ -127,14 +128,14 @@ namespace SnakeGame
 			Application.Current.Dispatcher.Invoke(() =>
 			{
 				enumerator = this.GameArea.Children.GetEnumerator();
-			});
 
-			int i = 0;
-			while (enumerator.MoveNext() && i < 4)
-			{
-				array[i] = (Rectangle)enumerator.Current;
-				i++;
-			}
+				int i = 0;
+				while (enumerator.MoveNext() && i < 4)
+				{
+					array[i] = (Rectangle)enumerator.Current;
+					i++;
+				}
+			});
 
 			return array;
 		}
@@ -187,43 +188,45 @@ namespace SnakeGame
 
 			return true;
 		}
+
+		bool settingUpFirstTime = true;
 		private void SetUpGameArea()
 		{
+			if (!settingUpFirstTime)
+			{
+				InitializeBorders();
+				Borders = GetBorders();
+			}
+			settingUpFirstTime = false;
+
+			UpdateScoreOnUi();
 			snake = new Snake(this);
 			Food = InitializeFood();
-			Draw(Food);
+			DrawElement(Food);
 		}
 		private void RefreshGame()
 		{
-			try
+			snake.Move();
+
+			if (snake.BitesItself() || snake.CollidesWithWalls())
+				this.StopGame();
+
+			if (snake.EatsFood())
 			{
-				snake.Move();
+				this.RespawnFood();
+				snake.Extend();
 
-				if (snake.BitesItself() || snake.CollidesWithWalls())
-					this.StopGame();
-
-				if (snake.EatsFood())
-				{
-					this.RespawnFood();
-					snake.Extend();
-
-					Score++;
-					if (Score % 5 == 0)
-						SpawnBonusFood();
-				}
-				else if (snake.EatsBonusFood(out Food bonusFood))
-				{
-					this.Score += 5;
-					RemoveBonusFood(bonusFood);
-				}
+				Score++;
+				if (Score % 5 == 0)
+					SpawnBonusFood();
 			}
-			catch (Exception e)
+			else if (snake.EatsBonusFood(out Food bonusFood))
 			{
-				using (StreamWriter sw = new StreamWriter("C:\\Users\\rtserunyan\\Desktop\\Logs.txt"))
-				{
-					sw.WriteLine(e.Message + "----------- Object -----" + e.Source + "-----Inner---" + e.InnerException);
-				}
+				this.Score += 5;
+				RemoveBonusFood(bonusFood);
 			}
+
+			UpdateScoreOnUi();
 		}
 		private void SpawnBonusFood()
 		{
@@ -249,9 +252,48 @@ namespace SnakeGame
 			while (!IsFoodPositionOk(bonusFood));
 
 			this.BonusFoods.Add(bonusFood);
-			this.Draw(bonusFood);
+			this.DrawElement(bonusFood);
 
 			bonusFood.StartBeating();
+		}
+		private void InitializeBorders()
+		{
+			this.Dispatcher.Invoke(() =>
+			{
+				var leftBorder = new Rectangle() { Height = 360, Width = 10, Fill = Settings.GameAreaBorderColor };
+				var topBorder = new Rectangle() { Height = 10, Width = 360, Fill = Settings.GameAreaBorderColor };
+				var rightBorder = new Rectangle() { Height = 360, Width = 10, Fill = Settings.GameAreaBorderColor };
+				var bottomBorder = new Rectangle() { Height = 10, Width = 360, Fill = Settings.GameAreaBorderColor };
+
+				this.GameArea.Children.Add(leftBorder);
+				Canvas.SetLeft(leftBorder, -10);
+				Canvas.SetTop(leftBorder, -10);
+
+				this.GameArea.Children.Add(topBorder);
+				Canvas.SetLeft(topBorder, 0);
+				Canvas.SetTop(topBorder, -10);
+
+				this.GameArea.Children.Add(rightBorder);
+				Canvas.SetLeft(rightBorder, 350);
+				Canvas.SetTop(rightBorder, 0);
+
+				this.GameArea.Children.Add(bottomBorder);
+				Canvas.SetLeft(bottomBorder, -10);
+				Canvas.SetTop(bottomBorder, 350);
+			});
+		}
+		private void UpdateScoreOnUi()
+		{
+			this.Dispatcher.Invoke(() =>
+			{
+				object obj = this.StatsArea.FindName("TextScore");
+				var score = obj as TextBlock;
+
+				if (score != null)
+				{
+					score.Text = this.Score.ToString();
+				}
+			});
 		}
 
 		//Event Handlers
