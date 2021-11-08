@@ -14,8 +14,6 @@ namespace SnakeGame.Models
 		public Point CurrentTargetPoint;
 		public Direction CurrentDirection;
 
-		public const int SideLength = 18;
-
 		public bool IsHead { get; set; }
 		public UIElement UiElement { get; set; }
 		public Point Position { get; set; }
@@ -33,12 +31,12 @@ namespace SnakeGame.Models
 
 			Application.Current.Dispatcher.Invoke(() =>
 			{
-				Width = SideLength;
-				Height = SideLength;
+				Width = Settings.SnakePartSideLength;
+				Height = Settings.SnakePartSideLength;
 				UiElement = new Ellipse()
 				{
-					Width = SideLength,
-					Height = SideLength,
+					Width = Settings.SnakePartSideLength,
+					Height = Settings.SnakePartSideLength,
 					Fill = isHead ? Brushes.Red : Brushes.Yellow
 				};
 			});
@@ -104,16 +102,16 @@ namespace SnakeGame.Models
 			switch (this.CurrentDirection)
 			{
 				case Direction.Left:
-					this.Position.X -= Snake.MovingSpeed;
+					this.Position.X -= Settings.SnakeMovingSpeed;
 					break;
 				case Direction.Up:
-					this.Position.Y -= Snake.MovingSpeed;
+					this.Position.Y -= Settings.SnakeMovingSpeed;
 					break;
 				case Direction.Right:
-					this.Position.X += Snake.MovingSpeed;
+					this.Position.X += Settings.SnakeMovingSpeed;
 					break;
 				case Direction.Down:
-					this.Position.Y += Snake.MovingSpeed;
+					this.Position.Y += Settings.SnakeMovingSpeed;
 					break;
 				default:
 					return;

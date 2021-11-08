@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Shapes;
-using System.Windows.Threading;
 using SnakeGame.Enums;
+using SnakeGame.Extensions;
 using SnakeGame.Models;
 using SnakeGame.Models.Interfaces;
-using SnakeGame.Extensions;
 
 namespace SnakeGame
 {
@@ -43,7 +42,7 @@ namespace SnakeGame
 		}
 
 		//Methods
-		public void DrawElement(IDrawable element)
+		public void Draw(IDrawable element)
 		{
 			this.Dispatcher.Invoke(() =>
 			{
@@ -59,7 +58,7 @@ namespace SnakeGame
 				Canvas.SetTop(element.UiElement, element.Position.Y);
 			});
 		}
-		public void RefreshElement(IEnumerable<IDrawable> elements)
+		public void Refresh(IEnumerable<IDrawable> elements)
 		{
 			this.Dispatcher.Invoke(() =>
 			{
@@ -70,7 +69,6 @@ namespace SnakeGame
 				}
 			});
 		}
-
 		public void StopGame()
 		{
 			if (timer == null)
@@ -108,7 +106,7 @@ namespace SnakeGame
 			Food = null;
 
 			InitializeFood();
-			this.DrawElement(Food);
+			this.Draw(Food);
 		}
 		public void RemoveBonusFood(Food bonusFood)
 		{
@@ -154,9 +152,9 @@ namespace SnakeGame
 					gameAreaHeight = (int)this.GameArea.Height;
 				});
 
-				var maxFoodSize = Food.SideLength + Food.ExtensionLimit;
-				var point = new Models.Point(rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaWidth - maxFoodSize),
-										rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaHeight - maxFoodSize));
+				var maxFoodSize = Settings.FoodSideLength + Settings.FoodExtensionLimit;
+				var point = new Models.Point(rnd.Next(0 + Settings.FoodExtensionLimit / 2, gameAreaWidth - maxFoodSize),
+										rnd.Next(0 + Settings.FoodExtensionLimit / 2, gameAreaHeight - maxFoodSize));
 
 				food = new Food(point, false, this);
 			}
@@ -202,7 +200,7 @@ namespace SnakeGame
 			UpdateScoreOnUi();
 			snake = new Snake(this);
 			Food = InitializeFood();
-			DrawElement(Food);
+			Draw(Food);
 		}
 		private void RefreshGame()
 		{
@@ -219,14 +217,16 @@ namespace SnakeGame
 				Score++;
 				if (Score % 5 == 0)
 					SpawnBonusFood();
+
+				UpdateScoreOnUi();
 			}
 			else if (snake.EatsBonusFood(out Food bonusFood))
 			{
 				this.Score += 5;
 				RemoveBonusFood(bonusFood);
+				UpdateScoreOnUi();
 			}
 
-			UpdateScoreOnUi();
 		}
 		private void SpawnBonusFood()
 		{
@@ -239,20 +239,20 @@ namespace SnakeGame
 			});
 
 			var rnd = new Random();
-			var maxFoodSize = Food.SideLength * 2 + Food.ExtensionLimit;
+			var maxFoodSize = Settings.FoodSideLength * 2 + Settings.FoodExtensionLimit;
 
 			Food bonusFood;
 			do
 			{
-				var point = new Models.Point(rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaWidth - maxFoodSize),
-										rnd.Next(0 + Food.ExtensionLimit / 2, gameAreaHeight - maxFoodSize));
+				var point = new Models.Point(rnd.Next(0 + Settings.FoodExtensionLimit / 2, gameAreaWidth - maxFoodSize),
+										rnd.Next(0 + Settings.FoodExtensionLimit / 2, gameAreaHeight - maxFoodSize));
 
 				bonusFood = new Food(point, true, this);
 			}
 			while (!IsFoodPositionOk(bonusFood));
 
 			this.BonusFoods.Add(bonusFood);
-			this.DrawElement(bonusFood);
+			this.Draw(bonusFood);
 
 			bonusFood.StartBeating();
 		}

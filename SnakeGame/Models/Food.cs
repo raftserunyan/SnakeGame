@@ -15,11 +15,6 @@ namespace SnakeGame.Models
 		private bool IsExpanded;
 		private readonly MainWindow mainWindow;
 
-		public const int SideLength = 15;
-		public const int BeatingInterval = 300;
-		public const int ExtensionLimit = 3;
-		public const int BonusFoodLifetime = 5000;
-
 		public int Width { get; set; }
 		public int Height { get; set; }
 		public Point Position { get; set; }
@@ -33,7 +28,7 @@ namespace SnakeGame.Models
 
 			if (isBonus)
 			{
-				var size = SideLength * 2;
+				var size = Settings.FoodSideLength * 2;
 
 				Width = size;
 				Height = size;
@@ -48,11 +43,11 @@ namespace SnakeGame.Models
 					};
 				});
 
-				Task.Run(async () => { await Task.Delay(BonusFoodLifetime); mainWindow.RemoveBonusFood(this); });
+				Task.Run(async () => { await Task.Delay(Settings.BonusFoodLifetime); mainWindow.RemoveBonusFood(this); });
 			}
 			else
 			{
-				var size = SideLength;
+				var size = Settings.FoodSideLength;
 
 				Width = size;
 				Height = size;
@@ -71,7 +66,7 @@ namespace SnakeGame.Models
 
 		public void StartBeating()
 		{
-			timer = new Timer((a) => Beat(), null, 0, BeatingInterval);
+			timer = new Timer((a) => Beat(), null, 0, Settings.FoodBeatingInterval);
 		}
 
 		[DebuggerStepThrough]
@@ -90,19 +85,19 @@ namespace SnakeGame.Models
 
 			if (IsExpanded)
 			{
-				width -= ExtensionLimit;
-				height -= ExtensionLimit;
-				this.Position.X += ExtensionLimit / 2;
-				this.Position.Y += ExtensionLimit / 2;
+				width -= Settings.FoodExtensionLimit;
+				height -= Settings.FoodExtensionLimit;
+				this.Position.X += Settings.FoodExtensionLimit / 2;
+				this.Position.Y += Settings.FoodExtensionLimit / 2;
 
 				IsExpanded = false;
 			}
 			else
 			{
-				width += ExtensionLimit;
-				height += ExtensionLimit;
-				this.Position.X -= ExtensionLimit / 2;
-				this.Position.Y -= ExtensionLimit / 2;
+				width += Settings.FoodExtensionLimit;
+				height += Settings.FoodExtensionLimit;
+				this.Position.X -= Settings.FoodExtensionLimit / 2;
+				this.Position.Y -= Settings.FoodExtensionLimit / 2;
 
 				IsExpanded = true;
 			}

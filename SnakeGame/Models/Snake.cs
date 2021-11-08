@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-//using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +10,6 @@ namespace SnakeGame.Models
 	public class Snake
 	{
 		//Fields
-		public const int MovingSpeed = 3;
 		public List<SnakePart> Body;
 		private MainWindow mainWindow;
 
@@ -88,15 +85,15 @@ namespace SnakeGame.Models
 			var snakeHead = new SnakePart(posX, posY, true);
 			snakeHead.CurrentDirection = Direction.None;
 			Body.Add(snakeHead);
-			mainWindow.DrawElement(snakeHead);
+			mainWindow.Draw(snakeHead);
 			Application.Current.Dispatcher.Invoke(() => { Panel.SetZIndex(snakeHead.UiElement, 100); });
 
 			//Create two more snake parts
 			this.AddSnakePart(new Point(Head.Position.X,
-										Head.Position.Y + SnakePart.SideLength))
+										Head.Position.Y + Settings.SnakePartSideLength))
 											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
 			this.AddSnakePart(new Point(Tail.Position.X,
-										Tail.Position.Y + SnakePart.SideLength))
+										Tail.Position.Y + Settings.SnakePartSideLength))
 											.DirectionsQueue.Enqueue(new ChangeDirectionPoint(new Point(posX, posY), Direction.Up));
 		}
 
@@ -107,7 +104,7 @@ namespace SnakeGame.Models
 			{
 				part.Move();
 			}
-			mainWindow.RefreshElement(this.Body);
+			mainWindow.Refresh(this.Body);
 		}
 		public bool BitesItself()
 		{
@@ -150,8 +147,8 @@ namespace SnakeGame.Models
 			}
 
 			var currentTail = this.Tail;
-			var newPart = AddSnakePart(new Point(currentTail.Position.X + x * SnakePart.SideLength,
-												currentTail.Position.Y + y * SnakePart.SideLength));
+			var newPart = AddSnakePart(new Point(currentTail.Position.X + x * Settings.SnakePartSideLength,
+												currentTail.Position.Y + y * Settings.SnakePartSideLength));
 
 			newPart.CurrentDirection = currentTail.CurrentDirection;
 			newPart.CurrentTargetPoint = currentTail.CurrentTargetPoint != null ? new Point(currentTail.CurrentTargetPoint) : null;
@@ -183,7 +180,7 @@ namespace SnakeGame.Models
 			Body.Add(newPart);
 
 			//Draw the part
-			mainWindow.DrawElement(newPart);
+			mainWindow.Draw(newPart);
 
 			return newPart;
 		}
